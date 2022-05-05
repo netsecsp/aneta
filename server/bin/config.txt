@@ -1,0 +1,46 @@
+#aneta server config file
+
+[globals]
+#全局发送限速, B/s
+max_sendspeed=-1
+#全局接收限速, B/s
+max_recvspeed=-1
+
+#接入地址端口
+host=
+port=
+
+#############################
+#配置证书信息
+[ssl]
+algo=tls/1.0
+cert=.\server.p12
+password=123456
+
+#############################
+#接入帐号配置: anonymous
+[anonymous]
+password=123456
+
+#接入帐号配置: alex
+[alex]
+password=123456
+
+#############################
+#代理协议配置: ftp/http/socks
+[ftp]
+enabled=1
+af=ipv6
+tcp_port=2121
+ssl_port=2990
+
+[http]
+enabled=1
+af=ipv6
+tcp_port=8080
+ssl_port=8443
+
+[socks]
+enabled=1
+af=ipv6
+tcp_port=1080
