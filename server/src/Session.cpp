@@ -1,7 +1,7 @@
 /*****************************************************************************
 Copyright (c) netsecsp 2012-2032, All rights reserved.
 
-Developer: Shengqian Yang, from China, E-mail: netsecsp@hotmail.com, last updated 07/01/2016
+Developer: Shengqian Yang, from China, E-mail: netsecsp@hotmail.com, last updated 05/01/2022
 http://aneta.sf.net
 
 Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@ END_ASYN_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 HRESULT CSession::OnEventNotify( uint64_t lParam1, uint64_t lParam2, IAsynIoOperation *lpAsynIoOperation )
 {
-    return m_spAsynFrame->PostMessage(AF_EVENT_NOTIFY, m_lparam1, m_lparam2, 0);
+    return m_spAsynFrame->PostMessage(0, AF_EVENT_NOTIFY, m_lparam1, m_lparam2, 0);
 }
 
 HRESULT CSession::OnQueryResult( uint64_t lParam1, uint64_t lParam2, IAsynIoOperation **ppAsynIoOperation )
