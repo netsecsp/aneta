@@ -73,7 +73,6 @@ public:
         HRESULT r0 = spGlobalSpeedController[Io_recv]->SetMaxSpeed(m_setsfile.get_long("globals", "max_recvspeed", -1));
         HRESULT r1 = spGlobalSpeedController[Io_send]->SetMaxSpeed(m_setsfile.get_long("globals", "max_sendspeed", -1));
 
-        SYSTEM_INFO si; ::GetSystemInfo(&si);
         if( m_setsfile.is_exist("ssl", "cert"))
         {// for ssl
             FILE *f = fopen(m_setsfile.get_string("ssl", "cert").c_str(), "rb");
@@ -90,13 +89,8 @@ public:
             }
         }
 
-        std::list< CComPtr<IAsynFrameThread> > lstAsynFrameThreads; //创建接入连接线程组
-        for(int seqno = 1; seqno <= si.dwNumberOfProcessors; ++ seqno)
-        {
-            CComPtr<IAsynFrameThread> spAsynFrameThread;
-            m_spInstanceManager->NewInstance(0, 0, IID_IAsynFrameThread, (void **)&spAsynFrameThread);
-            lstAsynFrameThreads.push_back(spAsynFrameThread);
-        }
+        CComPtr<IThreadPool> threadpool; //创建线程池
+        m_spInstanceManager->NewInstance(0, 0, IID_IThreadPool, (void**)&threadpool);
 
         for(std::set<std::string>::iterator it = m_setsfile.m_sections.begin();
             it != m_setsfile.m_sections.end(); ++ it)
@@ -124,11 +118,7 @@ public:
                 m_arPort2ProtocolAsynTcpSocketListeners[tcp_port] = std::make_pair(protocol, spAsynTcpSocketListener);
                 printf("listen tcp://*:%d[%s.%-5s]\n", tcp_port, af.c_str(), protocol.c_str());
 
-                for(std::list<CComPtr<IAsynFrameThread> >::iterator ia = lstAsynFrameThreads.begin();
-                    ia != lstAsynFrameThreads.end(); ++ ia)
-                {// 设置接入线程
-                    spAsynTcpSocketListener->Set(DT_SetAsynFrameThread, 0, *ia);
-                }
+                spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
             }
 
             PORT ssl_port = m_setsfile.get_long(protocol, "ssl_port", 0);
@@ -162,11 +152,7 @@ public:
                 m_arPort2ProtocolAsynTcpSocketListeners[ssl_port] = std::make_pair(protocol, spAsynTcpSocketListener);
                 printf("listen ssl://*:%d[%s.%-5s]\n", ssl_port, af.c_str(), protocol.c_str());
 
-                for(std::list<CComPtr<IAsynFrameThread> >::iterator ia = lstAsynFrameThreads.begin();
-                    ia != lstAsynFrameThreads.end(); ++ ia)
-                {// 设置接入线程
-                    spAsynTcpSocketListener->Set(DT_SetAsynFrameThread, 0, *ia);
-                }
+                spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
             }
         }
 
@@ -179,10 +165,13 @@ public:
         for(std::map<PORT, std::pair<std::string, CComPtr<IAsynTcpSocketListener> > >::iterator it = m_arPort2ProtocolAsynTcpSocketListeners.begin(); it != m_arPort2ProtocolAsynTcpSocketListeners.end(); ++ it)
         {
             const std::string &af = m_setsfile.get_string(it->second.first, "af", "ipv4");
-            CComPtr<IAsynIoOperation> spAsynIoOperation;
-            m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
-            spAsynIoOperation->SetOpParam1(it->first);
-            it->second.second->Accept(spAsynIoOperation);
+            for(int c = 0; c < 2; ++ c)
+            {
+                CComPtr<IAsynIoOperation> spAsynIoOperation;
+                m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                spAsynIoOperation->SetOpParam1(it->first);
+                it->second.second->Accept(spAsynIoOperation);
+            }
         }
         return true;
     }
