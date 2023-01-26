@@ -56,7 +56,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #else
 #pragma comment(lib,"asynframe_lib.lib")
 #endif
-STDAPI_(extern HRESULT) Initialize( /*[in ]*/IAsynMessageEvents* param1, /*[in ]*/IKeyvalSetter* param2 );
+STDAPI_(extern HRESULT) Initialize( /*[in ]*/IAsynMessageEvents *param1, /*[in ]*/IUnknown *param2 );
 STDAPI_(extern HRESULT) Destory();
 STDAPI_(extern InstancesManager *) GetInstancesManager();
 
@@ -84,7 +84,7 @@ int _tmain(int argc, _TCHAR *argv[])
         std::unique_ptr<CService> pService(new CService(lpInstancesManager));
         if( pService->Start())
         {
-            while(!kbhit())
+            while(!_kbhit())
             {
                 Sleep(100); //0.1sec
             }

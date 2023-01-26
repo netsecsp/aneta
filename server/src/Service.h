@@ -75,7 +75,7 @@ public:
 
         if( m_setsfile.is_exist("ssl", "cert"))
         {// for ssl
-            FILE *f = fopen(m_setsfile.get_string("ssl", "cert").c_str(), "rb");
+            FILE *f = 0; fopen_s(&f, m_setsfile.get_string("ssl", "cert").c_str(), "rb");
             if( f )
             {
                 BYTE temp[4096];
@@ -103,7 +103,7 @@ public:
             if(!m_setsfile.get_bool(protocol, "enabled", true)) continue;
 
             const std::string &af = m_setsfile.get_string(protocol, "af", "ipv4");
-            PORT tcp_port = m_setsfile.get_long(protocol, "tcp_port", 0);
+            PORT tcp_port = (PORT)m_setsfile.get_long(protocol, "tcp_port", 0);
             {// tcp
                 CComPtr<IAsynTcpSocketListener> spAsynTcpSocketListener;
                 m_spAsynNetwork->CreateAsynTcpSocketListener(STRING_EX::null, &spAsynTcpSocketListener);
@@ -121,7 +121,7 @@ public:
                 spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
             }
 
-            PORT ssl_port = m_setsfile.get_long(protocol, "ssl_port", 0);
+            PORT ssl_port = (PORT)m_setsfile.get_long(protocol, "ssl_port", 0);
             if( ssl_port &&
                 m_cert_p12.empty() == false )
             {// ssl

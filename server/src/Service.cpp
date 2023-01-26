@@ -213,7 +213,10 @@ HRESULT CService::OnQueryResult( uint64_t lparam1, uint64_t lparam2, IKeyvalSett
     {// cert.get
         if( m_cert_p12.empty()) return S_FALSE;
         ISsl *pSsl = (ISsl *)lparam2;
-        pSsl->SetCryptContext(0, 0, &STRING_from_string(m_cert_p12), &STRING_from_string(m_password));
+        STRING certandpasswd[2];
+        certandpasswd[0] = STRING_from_string(m_cert_p12);
+        certandpasswd[1] = STRING_from_string(m_password);
+        pSsl->SetCryptContext(0, 0, certandpasswd);
         ppKeyval[0]->Set(STRING_from_string(";version"), 0, STRING_from_string(m_setsfile.get_string("ssl", "algo", "tls/1.0")));
         return S_OK;
     }

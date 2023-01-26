@@ -1,33 +1,33 @@
-#aneta server config file
-
+#aneta server configure file
+#############################
 [globals]
-#È«¾Ö·¢ËÍÏŞËÙ, B/s
+#å…¨å±€å‘é€é™é€Ÿ, B/s
 max_sendspeed=-1
-#È«¾Ö½ÓÊÕÏŞËÙ, B/s
+#å…¨å±€æ¥æ”¶é™é€Ÿ, B/s
 max_recvspeed=-1
 
-#½ÓÈëµØÖ·¶Ë¿Ú
+#æ¥å…¥åœ°å€ç«¯å£
 host=
 port=
 
 #############################
-#ÅäÖÃÖ¤ÊéĞÅÏ¢
+#é…ç½®è¯ä¹¦ä¿¡æ¯
 [ssl]
 algo=tls/1.0
 cert=.\server.p12
 password=123456
 
 #############################
-#½ÓÈëÕÊºÅÅäÖÃ: anonymous
+#æ¥å…¥å¸å·é…ç½®: anonymous
 [anonymous]
 password=123456
 
-#½ÓÈëÕÊºÅÅäÖÃ: alex
+#æ¥å…¥å¸å·é…ç½®: alex
 [alex]
 password=123456
 
 #############################
-#´úÀíĞ­ÒéÅäÖÃ: ftp/http/socks
+#ä»£ç†åè®®é…ç½®: ftp/http/socks
 [ftp]
 enabled=1
 af=ipv6
