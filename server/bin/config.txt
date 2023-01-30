@@ -14,7 +14,7 @@ port=
 #配置证书信息
 [ssl]
 algo=tls/1.0
-cert=.\server.p12
+cert=server.p12
 password=123456
 
 #############################
@@ -30,17 +30,17 @@ password=123456
 #代理协议配置: ftp/http/socks
 [ftp]
 enabled=1
-af=ipv6
+af=ipv4
 tcp_port=2121
 ssl_port=2990
 
 [http]
 enabled=1
-af=ipv6
+af=ipv4
 tcp_port=8080
 ssl_port=8443
 
 [socks]
 enabled=1
-af=ipv6
+af=ipv4
 tcp_port=1080

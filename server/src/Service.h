@@ -75,7 +75,8 @@ public:
 
         if( m_setsfile.is_exist("ssl", "cert"))
         {// for ssl
-            FILE *f = 0; fopen_s(&f, m_setsfile.get_string("ssl", "cert").c_str(), "rb");
+            const std::string &file = m_setsfile.get_string("ssl", "cert");
+            FILE *f = 0; errno_t hr = fopen_s(&f, file.c_str(), "rb");
             if( f )
             {
                 BYTE temp[4096];
@@ -86,6 +87,10 @@ public:
                     m_cert_p12.assign((char*)temp, size);
                     m_password = m_setsfile.get_string("ssl", "password");
                 }
+            }
+            else
+            {
+                printf("open cert.p12[%s], error: %d\n", file.c_str(), (int)hr);
             }
         }
 
@@ -103,27 +108,27 @@ public:
             if(!m_setsfile.get_bool(protocol, "enabled", true)) continue;
 
             const std::string &af = m_setsfile.get_string(protocol, "af", "ipv4");
-            PORT tcp_port = (PORT)m_setsfile.get_long(protocol, "tcp_port", 0);
+            PORT tcpport = (PORT)m_setsfile.get_long(protocol, "tcp_port", 0);
             {// tcp
                 CComPtr<IAsynTcpSocketListener> spAsynTcpSocketListener;
                 m_spAsynNetwork->CreateAsynTcpSocketListener(STRING_EX::null, &spAsynTcpSocketListener);
                 HRESULT s = spAsynTcpSocketListener->Open(m_spAsynFrameThread, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, SOCK_STREAM, IPPROTO_TCP);
-                HRESULT t = spAsynTcpSocketListener->Bind(STRING_EX::null, tcp_port, 0, NULL); //同步bind
+                HRESULT t = spAsynTcpSocketListener->Bind(STRING_EX::null, tcpport, 0, NULL); //同步bind
                 if( t != S_OK )
                 {
-                    printf("bind tcp://*:%d[%s.%-5s], error: %d\n", tcp_port, af.c_str(), protocol.c_str(), t);
+                    printf("bind tcp://*:%d[%s.%-5s], error: %d\n", tcpport, af.c_str(), protocol.c_str(), t);
                     continue;
                 }
-                if( tcp_port == 0 ) spAsynTcpSocketListener->GetSockAddress(0, 0, &tcp_port, 0);
-                m_arPort2ProtocolAsynTcpSocketListeners[tcp_port] = std::make_pair(protocol, spAsynTcpSocketListener);
-                printf("listen tcp://*:%d[%s.%-5s]\n", tcp_port, af.c_str(), protocol.c_str());
+                if( tcpport == 0 ) spAsynTcpSocketListener->GetSockAddress(0, 0, &tcpport, 0);
+                m_arPort2ProtocolAsynTcpSocketListeners[tcpport] = std::make_pair(protocol, spAsynTcpSocketListener);
+                printf("listen tcp://*:%d[%s.%-5s]\n", tcpport, af.c_str(), protocol.c_str());
 
                 spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
             }
 
-            PORT ssl_port = (PORT)m_setsfile.get_long(protocol, "ssl_port", 0);
-            if( ssl_port &&
-                m_cert_p12.empty() == false )
+            PORT sslport = (PORT)m_setsfile.get_long(protocol, "ssl_port", 0);
+            if(!m_cert_p12.empty() &&
+                sslport )
             {// ssl
                 CComPtr<IAsynTcpSocketListener> spAsynTcpSocketListener;
 
@@ -143,14 +148,14 @@ public:
                 }
 
                 HRESULT s = spAsynTcpSocketListener->Open(m_spAsynFrameThread, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, SOCK_STREAM, IPPROTO_TCP);
-                HRESULT t = spAsynTcpSocketListener->Bind(STRING_EX::null, ssl_port, 0, NULL); //同步bind
+                HRESULT t = spAsynTcpSocketListener->Bind(STRING_EX::null, sslport, 0, NULL); //同步bind
                 if( t != S_OK )
                 {
-                    printf("bind ssl://*:%d[%s.%-5s], error: %d\n", ssl_port, af.c_str(), protocol.c_str(), t);
+                    printf("bind ssl://*:%d[%s.%-5s], error: %d\n", sslport, af.c_str(), protocol.c_str(), t);
                     continue;
                 }
-                m_arPort2ProtocolAsynTcpSocketListeners[ssl_port] = std::make_pair(protocol, spAsynTcpSocketListener);
-                printf("listen ssl://*:%d[%s.%-5s]\n", ssl_port, af.c_str(), protocol.c_str());
+                m_arPort2ProtocolAsynTcpSocketListeners[sslport] = std::make_pair(protocol, spAsynTcpSocketListener);
+                printf("listen ssl://*:%d[%s.%-5s]\n", sslport, af.c_str(), protocol.c_str());
 
                 spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
             }

@@ -228,30 +228,33 @@ HRESULT CService::OnQueryResult( uint64_t lparam1, uint64_t lparam2, IKeyvalSett
 
     if((ipos = d.m_val.rfind("account.verify")) != std::string::npos )
     {// verify client: user[:pass]
-        printf("pSocket: %p %s from %s\n", (void*)lparam2, c.m_val.c_str(), d.m_val.c_str());
-
         std::string::size_type ipos = c.m_val.find(':');
         std::string user = ipos == std::string::npos ? c.m_val : c.m_val.substr(0, ipos);
         std::string password = ipos == std::string::npos ? std::string("") : c.m_val.substr(ipos + 1);
 
-        if(!m_setsfile.is_exist(user, "password"))
+        if(!m_setsfile.is_exist(user, "password") ||
+            password != m_setsfile.get_string(user, "password"))
         {
+            printf("pSocket: %p %s from %s result no\n", (void*)lparam2, c.m_val.c_str(), d.m_val.c_str());
             return S_FALSE;
         }
-
-        return password == m_setsfile.get_string(user, "password") ? S_OK : S_FALSE;
+        else
+        {
+            printf("pSocket: %p %s from %s result ok\n", (void*)lparam2, c.m_val.c_str(), d.m_val.c_str());
+            return S_OK;
+        }
     }
 
     if((ipos = d.m_val.rfind("account.get"   )) != std::string::npos )
     {
-        printf("pSocket: %p %s from %s\n", (void*)lparam2, c.m_val.c_str(), d.m_val.c_str());
-
         std::string user = c.m_val;
         if(!m_setsfile.is_exist(user, "password"))
         {
+            printf("pSocket: %p %s from %s result no\n", (void*)lparam2, c.m_val.c_str(), d.m_val.c_str());
             return S_FALSE;
         }
 
+        printf("pSocket: %p %s from %s result ok\n", (void*)lparam2, c.m_val.c_str(), d.m_val.c_str());
         ppKeyval[0]->Set(STRING_from_string(";context"), 0, STRING_from_string(user + ":" + m_setsfile.get_string(user, "password")));
         return S_OK;
     }
