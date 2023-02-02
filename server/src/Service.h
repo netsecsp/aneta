@@ -95,7 +95,7 @@ public:
         }
 
         CComPtr<IThreadPool> threadpool; //创建线程池
-        m_spInstanceManager->NewInstance(0, 0, IID_IThreadPool, (void**)&threadpool);
+        m_spInstanceManager->NewInstance(0, 1, IID_IThreadPool, (void**)&threadpool);
 
         for(std::set<std::string>::iterator it = m_setsfile.m_sections.begin();
             it != m_setsfile.m_sections.end(); ++ it)
