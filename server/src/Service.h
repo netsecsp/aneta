@@ -94,24 +94,113 @@ public:
             }
         }
 
-        CComPtr<IThreadPool> threadpool; //创建线程池
-        m_spInstanceManager->NewInstance(0, 1, IID_IThreadPool, (void**)&threadpool);
+        CComPtr<IThreadPool> threadpool; threadpool.Attach(asynsdk::CreateThreadPool(m_spInstanceManager, "iosthreadpool?size=4", TP_FixedThreadpool));
 
         for(std::set<std::string>::iterator it = m_setsfile.m_sections.begin();
             it != m_setsfile.m_sections.end(); ++ it)
         {
-            const std::string &protocol = *it;
-            if( protocol != "ftp"  &&
-                protocol != "http" &&
-                protocol != "socks" ) continue;
+            const std::string &csection = *it;
+            if( csection != "forward.tcp" &&
+                csection != "forward.udp") continue;
 
-            if(!m_setsfile.get_bool(protocol, "enabled", true)) continue;
+            if(!m_setsfile.get_bool(csection, "enabled", true)) continue;
 
-            const std::string &af = m_setsfile.get_string(protocol, "af", "ipv4");
-            PORT tcpport = (PORT)m_setsfile.get_long(protocol, "tcp_port", 0);
+            const std::string &protocol = csection.substr(csection.find('.') + 1);
+            const std::string &af = m_setsfile.get_string(csection, "af", "ipv4");
+        
+            if( protocol == "udp")
+            {
+                std::string url = m_setsfile.get_string(csection, "url", "udp://*:0/?timeout=60");
+                PORT udpport = (PORT)m_setsfile.get_long(csection, "udp_port", 0);
+                {
+                    CComPtr<IAsynUdpSocket> spAsynUdpSocket;
+                    m_spAsynNetwork->CreateAsynUdpSocket(&spAsynUdpSocket);
+            
+                    HRESULT s = spAsynUdpSocket->Open(m_spAsynFrameThread, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, SOCK_DGRAM, IPPROTO_UDP);
+                    HRESULT t = spAsynUdpSocket->Bind(STRING_EX::null, udpport, 0, NULL); //同步bind
+                    if( t != S_OK )
+                    {
+                        printf("bind udp://*:%d[%s.%-5s], error: %d\n", udpport, af.c_str(), protocol.c_str(), t);
+                        continue;
+                    }
+                    if( udpport == 0 ) spAsynUdpSocket->GetSockAddress(0, 0, &udpport, 0);
+
+                    printf("listen udp://*:%d[%s.%-5s] -> %s\n", udpport, af.c_str(), protocol.c_str(), url.c_str());
+
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, -1, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    spAsynIoOperation->SetOpParam1(0); //mark is forword
+                    m_spAsynNetAgent->Connect(spAsynUdpSocket, STRING_from_string("forward " + url), spAsynIoOperation, 0);
+                }
+            }
+            else
+            {
+                std::string url = m_setsfile.get_string(csection, "url", "tcp://*:0");
+                PORT tcpport = (PORT)m_setsfile.get_long(csection, "tcp_port", 0);
+                {
+                    CComPtr<IAsynTcpSocketListener> spAsynTcpSocketListener;
+                    m_spAsynNetwork->CreateAsynTcpSocketListener(0, &spAsynTcpSocketListener);
+                    
+                    HRESULT s = spAsynTcpSocketListener->Open(m_spAsynFrameThread, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, SOCK_STREAM, IPPROTO_TCP);
+                    HRESULT t = spAsynTcpSocketListener->Bind(STRING_EX::null, tcpport, 0, NULL); //同步bind
+                    if( t != S_OK )
+                    {
+                        printf("bind tcp://*:%d[%s.%-5s], error: %d\n", tcpport, af.c_str(), protocol.c_str(), t);
+                        continue;
+                    }
+                    if( tcpport == 0 ) spAsynTcpSocketListener->GetSockAddress(0, 0, &tcpport, 0);
+                    spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
+            
+                    printf("listen tcp://*:%d[%s.%-5s] -> %s\n", tcpport, af.c_str(), protocol.c_str(), url.c_str());
+
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, -1, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    spAsynIoOperation->SetOpParam1(0); //mark is forword
+                    m_spAsynNetAgent->Connect(spAsynTcpSocketListener, STRING_from_string("forward " + url), spAsynIoOperation, 0);
+               }
+
+                PORT sslport = (PORT)m_setsfile.get_long(csection, "ssl_port", 0);
+                if(!m_cert_p12.empty() &&
+                    sslport )
+                {
+                    CComPtr<IAsynTcpSocketListener> spAsynTcpSocketListener;
+                    m_spAsynNetwork->CreateAsynTcpSocketListener(0, &spAsynTcpSocketListener);
+                    HRESULT s = spAsynTcpSocketListener->Open(m_spAsynFrameThread, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, SOCK_STREAM, IPPROTO_TCP);
+                    HRESULT t = spAsynTcpSocketListener->Bind(STRING_EX::null, sslport, 0, NULL); //同步bind
+                    if( t != S_OK )
+                    {
+                        printf("bind tcp://*:%d[%s.%-5s], error: %d\n", sslport, af.c_str(), protocol.c_str(), t);
+                        continue;
+                    }
+                    if( sslport == 0 ) spAsynTcpSocketListener->GetSockAddress(0, 0, &sslport, 0);
+                    spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
+
+                    url += "/?algo=" + m_setsfile.get_string("ssl", "algo", "tls/1.0");
+                    printf("listen tcp://*:%d[%s.%-5s] -> %s\n", sslport, af.c_str(), protocol.c_str(), url.c_str());
+
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, -1, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    spAsynIoOperation->SetOpParam1(0); //mark is forword
+                    m_spAsynNetAgent->Connect(spAsynTcpSocketListener, STRING_from_string("forward " + url), spAsynIoOperation, 0);
+                }
+            }
+        }
+
+        for(std::set<std::string>::iterator it = m_setsfile.m_sections.begin();
+            it != m_setsfile.m_sections.end(); ++ it)
+        {
+            const std::string &csection = *it;
+            if( csection != "proxy.ftp"   &&
+                csection != "proxy.http"  &&
+                csection != "proxy.socks" ) continue;
+
+            if(!m_setsfile.get_bool(csection, "enabled", true)) continue;
+ 
+            const std::string &protocol = csection.substr(csection.find('.') + 1);
+            const std::string &af = m_setsfile.get_string(csection, "af", "ipv4");
+        
+            PORT tcpport = (PORT)m_setsfile.get_long(csection, "tcp_port", 0);
             {// tcp
                 CComPtr<IAsynTcpSocketListener> spAsynTcpSocketListener;
-                m_spAsynNetwork->CreateAsynTcpSocketListener(STRING_EX::null, &spAsynTcpSocketListener);
+                m_spAsynNetwork->CreateAsynTcpSocketListener(0, &spAsynTcpSocketListener);
+                
                 HRESULT s = spAsynTcpSocketListener->Open(m_spAsynFrameThread, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, SOCK_STREAM, IPPROTO_TCP);
                 HRESULT t = spAsynTcpSocketListener->Bind(STRING_EX::null, tcpport, 0, NULL); //同步bind
                 if( t != S_OK )
@@ -120,20 +209,20 @@ public:
                     continue;
                 }
                 if( tcpport == 0 ) spAsynTcpSocketListener->GetSockAddress(0, 0, &tcpport, 0);
+                spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
+
                 m_arPort2ProtocolAsynTcpSocketListeners[tcpport] = std::make_pair(protocol, spAsynTcpSocketListener);
                 printf("listen tcp://*:%d[%s.%-5s]\n", tcpport, af.c_str(), protocol.c_str());
-
-                spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
             }
 
-            PORT sslport = (PORT)m_setsfile.get_long(protocol, "ssl_port", 0);
+            PORT sslport = (PORT)m_setsfile.get_long(csection, "ssl_port", 0);
             if(!m_cert_p12.empty() &&
                 sslport )
             {// ssl
                 CComPtr<IAsynTcpSocketListener> spAsynTcpSocketListener;
 
                 CComPtr<IAsynTcpSocketListener> spAsynInnSocketListener;
-                m_spAsynNetwork->CreateAsynTcpSocketListener(STRING_EX::null, &spAsynInnSocketListener);
+                m_spAsynNetwork->CreateAsynTcpSocketListener(0, &spAsynInnSocketListener);
 
                 CComPtr<IAsynRawSocket        > spAsynPtlSocket;
                 m_spAsynNetwork->CreateAsynPtlSocket(STRING_from_string("ssl"), (IUnknown **)&spAsynInnSocketListener.p, STRING_from_string( m_setsfile.get_string("ssl", "algo", "tls/1.0")), &spAsynPtlSocket);
@@ -154,26 +243,18 @@ public:
                     printf("bind ssl://*:%d[%s.%-5s], error: %d\n", sslport, af.c_str(), protocol.c_str(), t);
                     continue;
                 }
+                spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
+
                 m_arPort2ProtocolAsynTcpSocketListeners[sslport] = std::make_pair(protocol, spAsynTcpSocketListener);
                 printf("listen ssl://*:%d[%s.%-5s]\n", sslport, af.c_str(), protocol.c_str());
-
-                spAsynTcpSocketListener->Set(DT_SetThreadpool, 0, threadpool); //设置接入线程池
             }
-        }
-
-        if( m_arPort2ProtocolAsynTcpSocketListeners.empty())
-        {
-            printf("please check config.txt first\n");
-            return false;
         }
 
         for(std::map<PORT, std::pair<std::string, CComPtr<IAsynTcpSocketListener> > >::iterator it = m_arPort2ProtocolAsynTcpSocketListeners.begin(); it != m_arPort2ProtocolAsynTcpSocketListeners.end(); ++ it)
         {
-            const std::string &af = m_setsfile.get_string(it->second.first, "af", "ipv4");
             for(int c = 0; c < 2; ++ c)
             {
-                CComPtr<IAsynIoOperation> spAsynIoOperation;
-                m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, af == "ipv4" ? 2 : 23/*AF_INET:AF_INET6*/, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, -1, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
                 spAsynIoOperation->SetOpParam1(it->first);
                 it->second.second->Accept(spAsynIoOperation);
             }
@@ -202,6 +283,7 @@ protected:
     std::map<PORT, std::pair<std::string, CComPtr<IAsynTcpSocketListener> > > m_arPort2ProtocolAsynTcpSocketListeners;
     std::map<PORT, CComPtr<IAsynTcpSocketListener> > m_arPort2AsynTcpSocketListeners;
     std::map<uint64_t,   std::unique_ptr<CSession> > m_arSock2AgentSessions;
+    std::list<std::unique_ptr<CSession> > m_arForwordSessions;
 };
 
 #endif//__SERVICE_H__

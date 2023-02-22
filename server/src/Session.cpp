@@ -45,7 +45,10 @@ HRESULT CSession::OnEventNotify( uint64_t lParam1, uint64_t lParam2, IAsynIoOper
 HRESULT CSession::OnQueryResult( uint64_t lParam1, uint64_t lParam2, IAsynIoOperation **ppAsynIoOperation )
 {
 #ifdef _DEBUG
-    printf("pSocket: %p session[%p] transmit: %I64d\n", (void *)m_lparam2, (void *)lParam1, lParam2);
+    if(!m_lparam2 )
+        printf("forword: %p transmit: %I64d\n", (void *)lParam1, lParam2);
+    else
+        printf("pSocket: %p session[%p] transmit: %I64d\n", (void *)m_lparam2, (void *)lParam1, lParam2);
 #endif
     return S_OK;
 }

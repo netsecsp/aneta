@@ -14,13 +14,13 @@ port=
 #配置证书信息
 [ssl]
 algo=tls/1.0
-cert=.\server.p12
+cert=server.p12
 password=123456
 
 #############################
 #接入帐号配置: anonymous
 [anonymous]
-password=123456
+password=IEUser@
 
 #接入帐号配置: alex
 [alex]
@@ -28,19 +28,34 @@ password=123456
 
 #############################
 #代理协议配置: ftp/http/socks
-[ftp]
+[proxy.ftp]
 enabled=1
-af=ipv6
+af=ipv4
 tcp_port=2121
 ssl_port=2990
 
-[http]
+[proxy.http]
 enabled=1
-af=ipv6
+af=ipv4
 tcp_port=8080
 ssl_port=8443
 
-[socks]
+[proxy.socks]
 enabled=1
-af=ipv6
+af=ipv4
 tcp_port=1080
+
+#############################
+#端口转发配置: tcp/udp
+[forward.tcp]
+enabled=0
+af=ipv4
+tcp_port=7675
+ssl_port=0
+url=tcp://127.0.0.1:7000
+
+[forward.udp]
+enabled=0
+af=ipv4
+udp_port=7675
+url=udp://127.0.0.1:7000/?timeout=60

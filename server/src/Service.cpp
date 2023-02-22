@@ -55,18 +55,25 @@ HRESULT CService::OnIomsgNotify( uint64_t lparam1, uint64_t lAction, IAsynIoOper
             }
             else
             {
-                std::string host; asynsdk::CStringSetterRef temp(1, &host);
-                PORT        port;
-                CComPtr<IAsynNetIoOperation> spAsynIoOperation;
-                lpAsynIoOperation->QueryInterface(IID_IAsynNetIoOperation, (void **)&spAsynIoOperation);
-                spAsynIoOperation->GetPeerAddress(&temp, 0, &port, 0);
-
                 CComPtr<IAsynIoBridge> spAsynIoBridge;
                 lpAsynIoOperation->GetCompletedObject(1, IID_IAsynIoBridge, (void **)&spAsynIoBridge);
 
                 CSession *pSession = new CSession(m_spAsynFrame, (uint64_t)(this), lparam1, spAsynIoBridge);
-                m_arSock2AgentSessions[lparam1].reset(pSession);
-                printf("pSocket: %p session[%p] start to transmit[%s:%d]\n", (void *)lparam1, spAsynIoBridge.p, host.empty() ? "*" : host.c_str(), port);
+                if(!lparam1 )
+                {
+                    m_arForwordSessions.emplace_back(pSession);
+                    printf("forword: %p is ready!\n", spAsynIoBridge.p);
+                }
+                else
+                {
+                    std::string host; asynsdk::CStringSetterRef temp(1, &host);
+                    PORT        port;
+                    CComPtr<IAsynNetIoOperation> spAsynIoOperation;
+                    lpAsynIoOperation->QueryInterface(IID_IAsynNetIoOperation, (void **)&spAsynIoOperation);
+                    spAsynIoOperation->GetPeerAddress(&temp, 0, &port, 0);
+                    m_arSock2AgentSessions[lparam1].reset(pSession);
+                    printf("pSocket: %p session[%p] start to transmit[%s:%d]\n", (void *)lparam1, spAsynIoBridge.p, host.empty() ? "*" : host.c_str(), port);
+                }
                 pSession->Start();
                 break;
             }
@@ -161,7 +168,7 @@ HRESULT CService::OnQueryResult( uint64_t lparam1, uint64_t lparam2, IKeyvalSett
         PORT        port = 0;
 
         CComPtr<IAsynTcpSocketListener> spAsynTcpSocketListener;
-        m_spAsynNetwork->CreateAsynTcpSocketListener(STRING_EX::null, &spAsynTcpSocketListener);
+        m_spAsynNetwork->CreateAsynTcpSocketListener(0, &spAsynTcpSocketListener);
         spAsynTcpSocketListener->Open(m_spAsynFrameThread, atoi(a.m_val.c_str()), SOCK_STREAM, IPPROTO_TCP);
         spAsynTcpSocketListener->Bind(STRING_EX::null, 0, 0, 0);
         spAsynTcpSocketListener->GetSockAddress(0, 0, &port, 0);
@@ -197,6 +204,12 @@ HRESULT CService::OnQueryResult( uint64_t lparam1, uint64_t lparam2, IKeyvalSett
         ppKeyval[0]->Set(STRING_from_string(";context"), 0, STRING_from_string(c.m_val));
 
         ppKeyval[0]->Set(STRING_from_string(";resultp"), 0, STRING_from_buffer(spAsynUdpSocket.p, 0));
+        return S_OK;
+    }
+
+    if((ipos = d.m_val.rfind("forword"   )) != std::string::npos )
+    {// forword
+        printf("pSocket: %p %s\n", (void*)lparam2, c.m_val.c_str());
         return S_OK;
     }
 
