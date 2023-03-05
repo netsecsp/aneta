@@ -47,7 +47,6 @@ public:
     virtual ~CSession()
     {
         asyn_message_events_impl::Stop(0);
-        m_spAsynPipes->Close(0);
     }
 
 public: // interface of asyn_message_events_impl

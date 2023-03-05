@@ -56,7 +56,10 @@ HRESULT CService::OnIomsgNotify( uint64_t lparam1, uint64_t lAction, IAsynIoOper
             else
             {
                 CComPtr<IAsynIoBridge> spAsynIoBridge;
-                lpAsynIoOperation->GetCompletedObject(1, IID_IAsynIoBridge, (void **)&spAsynIoBridge);
+                if( lpAsynIoOperation->GetCompletedObject(1, IID_IAsynIoBridge, (void**)&spAsynIoBridge) != S_OK )
+                {
+                    break;
+                }
 
                 CSession *pSession = new CSession(m_spAsynFrame, (uint64_t)(this), lparam1, spAsynIoBridge);
                 if(!lparam1 )
@@ -180,7 +183,7 @@ HRESULT CService::OnQueryResult( uint64_t lparam1, uint64_t lparam2, IKeyvalSett
 
         CComPtr<IAsynIoOperation> spAsynIoOperation;
         m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
-        m_spAsynFrameThread->BindAsynIoOperation(spAsynIoOperation, 0, 0, 30000/*30sec超时*/);
+        m_spAsynFrameThread->BindAsynIoOperation(spAsynIoOperation, 0, 0, 30000/*30sec超时*/); //设定io超时
 
         spAsynIoOperation->SetOpParam1(port);
         spAsynTcpSocketListener->Accept(spAsynIoOperation);

@@ -127,7 +127,7 @@ public:
 
                     printf("listen udp://*:%d[%s.%-5s] -> %s\n", udpport, af.c_str(), protocol.c_str(), url.c_str());
 
-                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, -1, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
                     spAsynIoOperation->SetOpParam1(0); //mark is forword
                     m_spAsynNetAgent->Connect(spAsynUdpSocket, STRING_from_string("forward " + url), spAsynIoOperation, 0);
                 }
@@ -152,7 +152,7 @@ public:
             
                     printf("listen tcp://*:%d[%s.%-5s] -> %s\n", tcpport, af.c_str(), protocol.c_str(), url.c_str());
 
-                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, -1, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
                     spAsynIoOperation->SetOpParam1(0); //mark is forword
                     m_spAsynNetAgent->Connect(spAsynTcpSocketListener, STRING_from_string("forward " + url), spAsynIoOperation, 0);
                }
@@ -176,7 +176,7 @@ public:
                     url += "/?algo=" + m_setsfile.get_string("ssl", "algo", "tls/1.0");
                     printf("listen tcp://*:%d[%s.%-5s] -> %s\n", sslport, af.c_str(), protocol.c_str(), url.c_str());
 
-                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, -1, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
                     spAsynIoOperation->SetOpParam1(0); //mark is forword
                     m_spAsynNetAgent->Connect(spAsynTcpSocketListener, STRING_from_string("forward " + url), spAsynIoOperation, 0);
                 }
@@ -254,7 +254,7 @@ public:
         {
             for(int c = 0; c < 2; ++ c)
             {
-                CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, -1, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
                 spAsynIoOperation->SetOpParam1(it->first);
                 it->second.second->Accept(spAsynIoOperation);
             }
