@@ -60,11 +60,49 @@ STDAPI_(extern HRESULT) Initialize( /*[in ]*/IAsynMessageEvents *param1, /*[in ]
 STDAPI_(extern HRESULT) Destory();
 STDAPI_(extern InstancesManager *) GetInstancesManager();
 
+static void ShowUsage(std::string name)
+{
+    std::string::size_type i = name.find_last_of("/\\");
+    if( i != std::string::npos )
+        name.erase(0, i + 1);
+
+    printf("Usage: %s configfile\n", name.c_str());
+}
+
 int _tmain(int argc, _TCHAR *argv[])
 {
     printf("Copyright (c) netsecsp 2012-2032, All rights reserved.\n");
     printf("Developer: Shengqian Yang, from China, E-mail: netsecsp@hotmail.com, last updated " STRING_UPDATETIME "\n");
     printf("http://aneta.sf.net\n\n");
+
+    const char *file = "config.txt";
+    for(int i = 1; i < argc; ++ i)
+    {
+        if( strcmp(argv[i], "/?") == 0 || 
+            strcmp(argv[i], "--help") == 0 )
+        {
+            file = 0;
+            break;
+        }
+        else
+        {
+            file = argv[i];
+        }
+    }
+
+    if(!file )
+    {
+        ShowUsage(argv[0]);
+        return 0;
+    }
+
+    setting configure(file);
+
+    if( configure.m_sections.empty())
+    {
+        ShowUsage(argv[0]);
+        return 0;
+    }
 
     if( Initialize(NULL, NULL) != NO_ERROR )
     {
@@ -81,12 +119,12 @@ int _tmain(int argc, _TCHAR *argv[])
             break;
         }
 
-        std::unique_ptr<CService> pService(new CService(lpInstancesManager));
+        std::unique_ptr<CService> pService(new CService(lpInstancesManager, configure));
         if( pService->Start())
         {
             while(!_kbhit())
             {
-                Sleep(100); //0.1sec
+                ::Sleep(100); //0.1sec
             }
         }
         pService->Stop();
