@@ -47,6 +47,8 @@ public:
     CService(InstancesManager *lpInstanceManager, setting &configure)
         : m_setsfile(configure), m_spInstanceManager(lpInstanceManager)
     {
+        m_spInstanceManager->GetInstance(STRING_from_string(IN_AsynNetAgent), IID_IAsynNetAgent, (void **)&m_spAsynNetAgent);
+        m_spInstanceManager->GetInstance(STRING_from_string(IN_AsynNetwork ), IID_IAsynNetwork , (void **)&m_spAsynNetwork );
     }
 
 public: // interface of asyn_message_events_impl
@@ -58,9 +60,6 @@ public: // interface of asyn_message_events_impl
 public:
     bool Start()
     {
-        m_spInstanceManager->GetInstance(STRING_from_string(IN_AsynNetAgent), IID_IAsynNetAgent, (void **)&m_spAsynNetAgent);
-        m_spInstanceManager->GetInstance(STRING_from_string(IN_AsynNetwork ), IID_IAsynNetwork , (void **)&m_spAsynNetwork );
-
         m_spInstanceManager->NewInstance(0, TC_Iocp, IID_IAsynFrameThread, (void **)&m_spAsynFrameThread);
         CreateAsynFrame(m_spAsynFrameThread, 0, &m_spAsynFrame);
 

@@ -87,7 +87,9 @@ HRESULT CService::OnIomsgNotify( uint64_t lparam1, uint64_t lAction, IAsynIoOper
             PORT bindport = (PORT)lparam1;
             if( lErrorCode != NO_ERROR )
             {
+                #ifdef _DEBUG
                 printf("accept[%d], error: %d\n", bindport, lErrorCode);
+                #endif
 
                 std::map<PORT, std::pair<std::string, CComPtr<IAsynTcpSocketListener> > >::iterator ia = m_arPort2ProtocolAsynTcpSocketListeners.find(bindport);
                 if( ia != m_arPort2ProtocolAsynTcpSocketListeners.end()) return ia->second.second->Accept(lpAsynIoOperation);
