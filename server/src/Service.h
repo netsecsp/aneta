@@ -224,7 +224,7 @@ public:
                 m_spAsynNetwork->CreateAsynTcpSocketListener(0, &spAsynInnSocketListener);
 
                 CComPtr<IAsynRawSocket        > spAsynPtlSocket;
-                m_spAsynNetwork->CreateAsynPtlSocket(STRING_from_string("ssl"), (IUnknown **)&spAsynInnSocketListener.p, STRING_from_string( m_setsfile.get_string("ssl", "algo", "tls/1.0")), &spAsynPtlSocket);
+                m_spAsynNetwork->CreateAsynPtlSocket(STRING_from_string("ssl"), spAsynInnSocketListener, 0, STRING_from_string( m_setsfile.get_string("ssl", "algo", "tls/1.0")), &spAsynPtlSocket);
                 if( spAsynPtlSocket == NULL )
                 {
                     printf("can't load plugin: ssl\n");
