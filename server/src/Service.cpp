@@ -1,7 +1,7 @@
 /*****************************************************************************
 Copyright (c) netsecsp 2012-2032, All rights reserved.
 
-Developer: Shengqian Yang, from China, E-mail: netsecsp@hotmail.com, last updated 05/01/2022
+Developer: Shengqian Yang, from China, E-mail: netsecsp@hotmail.com, last updated 01/15/2024
 http://aneta.sf.net
 
 Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,7 @@ HRESULT CService::OnIomsgNotify( uint64_t lparam1, uint64_t lAction, IAsynIoOper
             else
             {
                 CComPtr<IAsynIoBridge> spAsynIoBridge;
-                if( lpAsynIoOperation->GetCompletedObject(1, IID_IAsynIoBridge, (void**)&spAsynIoBridge) != S_OK )
+                if( lpAsynIoOperation->GetCompletedObject(1, IID_IAsynIoBridge, (IUnknown**)&spAsynIoBridge) != S_OK )
                 {
                     break;
                 }
@@ -118,7 +118,7 @@ HRESULT CService::OnIomsgNotify( uint64_t lparam1, uint64_t lAction, IAsynIoOper
                 else
                 {
                     CComPtr<IAsynRawSocket  > spAsynNewSocket;
-                    lpAsynIoOperation->GetCompletedObject(1, IID_IAsynRawSocket, (void **)&spAsynNewSocket);
+                    lpAsynIoOperation->GetCompletedObject(1, IID_IAsynRawSocket, (IUnknown **)&spAsynNewSocket);
 
                     std::map<PORT, std::pair<std::string, CComPtr<IAsynTcpSocketListener> > >::iterator ia = m_arPort2ProtocolAsynTcpSocketListeners.find(bindport);
                     printf("pSocket: %p is created from %s:%d[%s]\n", spAsynNewSocket.p, host.c_str(), port, ia->second.first.c_str());
@@ -127,7 +127,7 @@ HRESULT CService::OnIomsgNotify( uint64_t lparam1, uint64_t lAction, IAsynIoOper
                     m_spAsynNetAgent->Connect(spAsynNewSocket, STRING_from_string(ia->second.first), lpAsynIoOperation, 5000/*5sec*/);
 
                     CComPtr<IAsynIoOperation> spConnOperation;
-                    m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, af, 0, IID_IAsynIoOperation, (void **)&spConnOperation);
+                    m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, af, 0, IID_IAsynIoOperation, (IUnknown **)&spConnOperation);
                     spConnOperation->SetOpParam1((uint64_t)bindport);
                     return ia->second.second->Accept(spConnOperation);
                 }
@@ -184,7 +184,7 @@ HRESULT CService::OnQueryResult( uint64_t lparam1, uint64_t lparam2, IKeyvalSett
         m_arPort2AsynTcpSocketListeners[port] = spAsynTcpSocketListener;
 
         CComPtr<IAsynIoOperation> spAsynIoOperation;
-        m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+        m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (IUnknown **)&spAsynIoOperation);
         m_spAsynFrameThread->BindAsynIoOperation(spAsynIoOperation, 0, 0, 30000/*30sec超时*/); //设定io超时
 
         spAsynIoOperation->SetOpParam1(port);
@@ -218,7 +218,7 @@ HRESULT CService::OnQueryResult( uint64_t lparam1, uint64_t lparam2, IKeyvalSett
         return S_OK;
     }
 
-    if((ipos = d.m_val.rfind("ftp.stat"   )) != std::string::npos )
+    if((ipos = d.m_val.rfind("stat.verify")) != std::string::npos )
     {// ftpserver stat ack
         static const char *ftpstat = "Copyright (c) netsecsp 2012-2032, All rights reserved.\n"
                                      "Developer: Shengqian Yang, from China, E-mail: netsecsp@hotmail.com, last updated " STRING_UPDATETIME "\n"

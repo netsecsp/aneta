@@ -3,7 +3,7 @@
 /*****************************************************************************
 Copyright (c) netsecsp 2012-2032, All rights reserved.
 
-Developer: Shengqian Yang, from China, E-mail: netsecsp@hotmail.com, last updated 05/01/2022
+Developer: Shengqian Yang, from China, E-mail: netsecsp@hotmail.com, last updated 01/15/2024
 http://aneta.sf.net
 
 Redistribution and use in source and binary forms, with or without
@@ -47,8 +47,8 @@ public:
     CService(InstancesManager *lpInstanceManager, setting &configure)
         : m_setsfile(configure), m_spInstanceManager(lpInstanceManager)
     {
-        m_spInstanceManager->GetInstance(STRING_from_string(IN_AsynNetAgent), IID_IAsynNetAgent, (void **)&m_spAsynNetAgent);
-        m_spInstanceManager->GetInstance(STRING_from_string(IN_AsynNetwork ), IID_IAsynNetwork , (void **)&m_spAsynNetwork );
+        m_spInstanceManager->GetInstance(STRING_from_string(IN_AsynNetAgent), IID_IAsynNetAgent, (IUnknown **)&m_spAsynNetAgent);
+        m_spInstanceManager->GetInstance(STRING_from_string(IN_AsynNetwork ), IID_IAsynNetwork , (IUnknown **)&m_spAsynNetwork );
     }
 
 public: // interface of asyn_message_events_impl
@@ -60,15 +60,15 @@ public: // interface of asyn_message_events_impl
 public:
     bool Start()
     {
-        m_spInstanceManager->NewInstance(0, TC_Iocp, IID_IAsynFrameThread, (void **)&m_spAsynFrameThread);
+        m_spInstanceManager->NewInstance(0, TC_Iocp, IID_IAsynFrameThread, (IUnknown **)&m_spAsynFrameThread);
         CreateAsynFrame(m_spAsynFrameThread, 0, &m_spAsynFrame);
 
         //设置全局发送/接收速度: IAsynNetwork, B/s
         CComPtr<ISpeedController> spGlobalSpeedController[2];
         CComPtr<IObjectHolder   > spObjectHolder;
         m_spAsynNetwork->QueryInterface(IID_IObjectHolder, (void **)&spObjectHolder);
-        spObjectHolder->Get(Io_recv, 0, IID_ISpeedController, (void **)&spGlobalSpeedController[Io_recv]);
-        spObjectHolder->Get(Io_send, 0, IID_ISpeedController, (void **)&spGlobalSpeedController[Io_send]);
+        spObjectHolder->Get(Io_recv, 0, IID_ISpeedController, (IUnknown **)&spGlobalSpeedController[Io_recv]);
+        spObjectHolder->Get(Io_send, 0, IID_ISpeedController, (IUnknown **)&spGlobalSpeedController[Io_send]);
         HRESULT r0 = spGlobalSpeedController[Io_recv]->SetMaxSpeed(m_setsfile.get_long("globals", "max_recvspeed", -1));
         HRESULT r1 = spGlobalSpeedController[Io_send]->SetMaxSpeed(m_setsfile.get_long("globals", "max_sendspeed", -1));
 
@@ -93,7 +93,7 @@ public:
             }
         }
 
-        CComPtr<IThreadPool> threadpool; threadpool.Attach(asynsdk::CreateThreadPool(m_spInstanceManager, "iosthreadpool?t=1&size=4", PT_FixedThreadpool));
+        CComPtr<IThreadPool> threadpool; asynsdk::CreateObject(m_spInstanceManager, "iosthreadpool?t=1&size=4", 0, PT_FixedThreadpool, IID_IThreadPool, (IUnknown**)&threadpool);
 
         for(std::set<std::string>::iterator it = m_setsfile.m_sections.begin();
             it != m_setsfile.m_sections.end(); ++ it)
@@ -126,7 +126,7 @@ public:
 
                     printf("listen udp://*:%d[%s.%-5s] -> %s\n", udpport, af.c_str(), protocol.c_str(), url.c_str());
 
-                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (IUnknown **)&spAsynIoOperation);
                     spAsynIoOperation->SetOpParam1(0); //mark is forword
                     m_spAsynNetAgent->Connect(spAsynUdpSocket, STRING_from_string("forward " + url), spAsynIoOperation, 0);
                 }
@@ -151,7 +151,7 @@ public:
             
                     printf("listen tcp://*:%d[%s.%-5s] -> %s\n", tcpport, af.c_str(), protocol.c_str(), url.c_str());
 
-                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (IUnknown **)&spAsynIoOperation);
                     spAsynIoOperation->SetOpParam1(0); //mark is forword
                     m_spAsynNetAgent->Connect(spAsynTcpSocketListener, STRING_from_string("forward " + url), spAsynIoOperation, 0);
                }
@@ -175,7 +175,7 @@ public:
                     url += "/?algo=" + m_setsfile.get_string("ssl", "algo", "tls/1.0");
                     printf("listen tcp://*:%d[%s.%-5s] -> %s\n", sslport, af.c_str(), protocol.c_str(), url.c_str());
 
-                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                    CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (IUnknown **)&spAsynIoOperation);
                     spAsynIoOperation->SetOpParam1(0); //mark is forword
                     m_spAsynNetAgent->Connect(spAsynTcpSocketListener, STRING_from_string("forward " + url), spAsynIoOperation, 0);
                 }
@@ -253,7 +253,7 @@ public:
         {
             for(int c = 0; c < 2; ++ c)
             {
-                CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (void **)&spAsynIoOperation);
+                CComPtr<IAsynIoOperation> spAsynIoOperation; m_spAsynNetwork->CreateAsynIoOperation(m_spAsynFrame, 0, 0, IID_IAsynIoOperation, (IUnknown **)&spAsynIoOperation);
                 spAsynIoOperation->SetOpParam1(it->first);
                 it->second.second->Accept(spAsynIoOperation);
             }
