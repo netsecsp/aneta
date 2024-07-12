@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map >
 #include <list>
 #include <memory>
-#include <frame/AsynNeta_internal.h>
+#include <frame/AsynNeta.h>
 #include <frame/asm/INet.h>
 #include <frame/asm/ISsl.h>
 #include "setting.h"
