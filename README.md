@@ -1,4 +1,4 @@
-> asynframe-sdk_v1.6.1-20240712.zip is from https://github.com/netsecsp/asynframe  
+> asynframe-sdk_v1.7.0-20240802.zip is from https://github.com/netsecsp/asynframe  
 
 # anetaserver.exe 
 > supports ftp[s]/http[s]/socks network agent service program under windows  
